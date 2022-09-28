@@ -1,0 +1,24 @@
+---
+# tasks file for gitlab-runner-role
+- name: Check if GitLab Runner is already installed.
+  ansible.builtin.stat: path=/usr/bin/gitlab-runner
+  register: gitlab_runner_file
+
+- name: Download GitLab Runner repository installation script.
+  ansible.builtin.get_url:
+    url: "{{ gitlab_runner_repository_installation_script_url }}"
+    dest: /tmp/gitlab_runner_install_repository.sh
+  when: not gitlab_runner_file.stat.exists
+
+- name: Install GitLab repository.
+  ansible.builtin.command: bash /tmp/gitlab_runner_install_repository.sh
+  register: output
+  when: not gitlab_runner_file.stat.exists
+
+- name: Install GitLab Runner
+  ansible.builtin.package:
+    name: "{{ gitlab_runner_package_name | default('gitlab-runner') }}"
+    state: present
+  async: 300
+  poll: 5
+  when: not gitlab_runner_file.stat.exists
